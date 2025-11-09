@@ -86,7 +86,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, allPages);
   });
   app.get('/api/docs/page/*', async (c) => {
-    const path = c.req.path.replace('/api/docs/page/', '');
+    const path = decodeURIComponent(c.req.path.replace('/api/docs/page/', ''));
     const { items: allPages } = await PageEntity.list(c.env, null, 1000);
     const tree = buildPageTree(allPages);
     const page = findPageByPath(tree, path);

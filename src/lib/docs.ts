@@ -12,7 +12,7 @@ export async function getPageTree(forceRefresh = false): Promise<PageNode[]> {
 }
 export async function getPageBySlug(slug: string): Promise<PageNode | null> {
   try {
-    return await api<PageNode>(`/api/docs/page/${slug}`);
+    return await api<PageNode>(`/api/docs/page/${encodeURIComponent(slug)}`);
   } catch (error) {
     console.error(`Failed to fetch page by slug: ${slug}`, error);
     return null;
