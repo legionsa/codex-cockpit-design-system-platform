@@ -3,10 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { PageNode } from '@shared/docs-types';
 import { getPageTree } from '@/lib/docs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronRight, Loader2, History, Book, ExternalLink } from 'lucide-react';
+import { ChevronRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
-import { Separator } from '../ui/separator';
 interface NavLinkProps {
   node: PageNode;
   currentPath: string;
@@ -83,41 +82,10 @@ export function SidebarNav() {
     );
   }
   return (
-    <nav className="flex flex-col">
-      <div className="space-y-1">
-        {tree.map(node => (
-          <NavLink key={node.id} node={node} currentPath={location.pathname} />
-        ))}
-      </div>
-      <Separator className="my-4" />
-      <Link
-        to="/docs/changelog"
-        className={cn(
-          'flex items-center gap-2 text-sm py-2 rounded-md transition-colors',
-          location.pathname === '/docs/changelog' ? 'font-semibold text-primary' : 'text-foreground/80 hover:text-foreground'
-        )}
-      >
-        <History className="h-4 w-4" />
-        <span>Changelog</span>
-      </Link>
-      <Separator className="my-4" />
-      <div>
-        <h4 className="mb-2 text-xs font-semibold text-muted-foreground tracking-wider uppercase">Resources</h4>
-        <div className="flex flex-col space-y-1">
-          <a
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between text-sm py-2 rounded-md transition-colors text-foreground/80 hover:text-foreground"
-          >
-            <div className="flex items-center gap-2">
-              <Book className="h-4 w-4" />
-              <span>Storybook</span>
-            </div>
-            <ExternalLink className="h-4 w-4" />
-          </a>
-        </div>
-      </div>
+    <nav className="flex flex-col space-y-1">
+      {tree.map(node => (
+        <NavLink key={node.id} node={node} currentPath={location.pathname} />
+      ))}
     </nav>
   );
 }

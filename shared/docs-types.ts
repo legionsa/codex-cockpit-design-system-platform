@@ -22,14 +22,3 @@ export interface PageNode extends Page {
   children: PageNode[];
   path: string;
 }
-export interface User {
-  id: string;
-  name: string;
-  passwordHash: string;
-}
-export interface ChangelogEntry {
-  id: string;
-  version: string;
-  date: string;
-  content: EditorJSData;
-}
