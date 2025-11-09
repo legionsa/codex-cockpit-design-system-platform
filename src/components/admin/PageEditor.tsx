@@ -1,24 +1,24 @@
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import EditorJS, { EditorConfig } from '@editorjs/editorjs';
-// @ts-expect-error
+// @ts-expect-error - No official types for this community plugin
 import Header from '@editorjs/header';
-// @ts-expect-error
+// @ts-expect-error - No official types for this community plugin
 import List from '@editorjs/list';
-// @ts-expect-error
+// @ts-expect-error - No official types for this community plugin
 import CodeTool from '@editorjs/code';
-// @ts-expect-error
+// @ts-expect-error - No official types for this community plugin
 import Paragraph from '@editorjs/paragraph';
-// @ts-expect-error
+// @ts-expect-error - No official types for this community plugin
 import Embed from '@editorjs/embed';
-// @ts-expect-error
+// @ts-expect-error - No official types for this community plugin
 import Table from '@editorjs/table';
-// @ts-expect-error
+// @ts-expect-error - No official types for this community plugin
 import Checklist from '@editorjs/checklist';
-// @ts-expect-error
+// @ts-expect-error - No official types for this community plugin
 import Quote from '@editorjs/quote';
-// @ts-expect-error
+// @ts-expect-error - No official types for this community plugin
 import Warning from '@editorjs/warning';
-// @ts-expect-error
+// @ts-expect-error - No official types for this community plugin
 import Delimiter from '@editorjs/delimiter';
 import { PageNode, EditorJSData } from '@shared/docs-types';
 const EDITOR_JS_TOOLS = {
@@ -42,7 +42,12 @@ export const PageEditor = forwardRef<{ save: () => Promise<EditorJSData | undefi
   useImperativeHandle(ref, () => ({
     save: async () => {
       if (editorInstance.current) {
-        return await editorInstance.current.save();
+        const outputData = await editorInstance.current.save();
+        // Ensure the time property is always present
+        return {
+          ...outputData,
+          time: outputData.time || Date.now(),
+        } as EditorJSData;
       }
     },
   }));

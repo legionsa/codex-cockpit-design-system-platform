@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React from 'react';
 import {
   DndContext,
   closestCenter,
@@ -17,18 +17,30 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { PageNode } from '@shared/docs-types';
-import { GripVertical, FileText, PlusCircle } from 'lucide-react';
+import { GripVertical, FileText, PlusCircle, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useDocsStore } from '@/hooks/use-docs-store';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 interface SortableItemProps {
   id: string;
   node: PageNode;
   selectedPageId: string | null;
   onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
   depth: number;
 }
-function SortableItem({ id, node, selectedPageId, onSelect, depth }: SortableItemProps) {
+function SortableItem({ id, node, selectedPageId, onSelect, onDelete, depth }: SortableItemProps) {
   const {
     attributes,
     listeners,
@@ -49,13 +61,40 @@ function SortableItem({ id, node, selectedPageId, onSelect, depth }: SortableIte
         "flex items-center gap-2 group p-2 rounded-md cursor-pointer transition-colors",
         selectedPageId === id ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
       )}
-      onClick={() => onSelect(id)}
     >
-      <button {...attributes} {...listeners} className="cursor-grab p-1 -ml-1">
+      <button {...attributes} {...listeners} className="cursor-grab p-1 -ml-1" onClick={(e) => e.stopPropagation()}>
         <GripVertical className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
       </button>
-      <FileText className="h-4 w-4 text-muted-foreground" />
-      <span className="flex-1 text-sm truncate">{node.title}</span>
+      <div className="flex-1 flex items-center gap-2" onClick={() => onSelect(id)}>
+        <FileText className="h-4 w-4 text-muted-foreground" />
+        <span className="flex-1 text-sm truncate">{node.title}</span>
+      </div>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the page "{node.title}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => onDelete(id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -67,7 +106,8 @@ export function PageTree({ selectedPageId, onSelectPage }: PageTreeProps) {
   const pageTree = useDocsStore(state => state.pageTree);
   const addNewPage = useDocsStore(state => state.addNewPage);
   const reorderPages = useDocsStore(state => state.reorderPages);
-  const flattenedTree = useMemo(() => {
+  const deletePage = useDocsStore(state => state.deletePage);
+  const flattenedTree = React.useMemo(() => {
     const flatten = (nodes: PageNode[], depth = 0): { id: string; depth: number; node: PageNode }[] => {
       return nodes.flatMap(node => [
         { id: node.id, depth, node },
@@ -88,11 +128,9 @@ export function PageTree({ selectedPageId, onSelectPage }: PageTreeProps) {
       const oldIndex = flattenedTree.findIndex(item => item.id === active.id);
       const newIndex = flattenedTree.findIndex(item => item.id === over.id);
       const newItems = arrayMove(flattenedTree, oldIndex, newIndex);
-      // This is a simplified reordering logic. A real implementation would need to handle nesting.
-      // For now, we just update order and assume root level.
       const updates = newItems.map((item, index) => ({
         id: item.id,
-        parentId: item.node.parentId, // This needs to be improved for nesting
+        parentId: item.node.parentId,
         order: index,
       }));
       reorderPages(updates);
@@ -121,6 +159,7 @@ export function PageTree({ selectedPageId, onSelectPage }: PageTreeProps) {
                 node={node}
                 selectedPageId={selectedPageId}
                 onSelect={onSelectPage}
+                onDelete={deletePage}
                 depth={depth}
               />
             ))}

@@ -8,10 +8,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthStore } from '@/hooks/use-auth-store';
+import { useDocsStore, useCurrentPage } from '@/hooks/use-docs-store';
 import { useNavigate } from 'react-router-dom';
-import { Save, Send, ChevronDown, Loader2 } from 'lucide-react';
+import { Save, Send, ChevronDown, Loader2, MoreVertical, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 interface AdminHeaderProps {
   currentPageTitle: string;
@@ -22,18 +34,22 @@ interface AdminHeaderProps {
 export function AdminHeader({ currentPageTitle, onSave, isSaving, lastSaved }: AdminHeaderProps) {
   const user = useAuthStore(state => state.user);
   const logout = useAuthStore(state => state.logout);
+  const deletePage = useDocsStore(state => state.deletePage);
+  const selectedPageId = useDocsStore(state => state.selectedPageId);
+  const currentPage = useCurrentPage();
   const navigate = useNavigate();
   const handleLogout = () => {
     logout();
     navigate('/admin/login');
   };
+  const handleDelete = () => {
+    if (selectedPageId) {
+      deletePage(selectedPageId);
+    }
+  };
   const getSaveStatus = () => {
-    if (isSaving) {
-      return 'Saving...';
-    }
-    if (lastSaved) {
-      return `Saved ${formatDistanceToNow(lastSaved, { addSuffix: true })}`;
-    }
+    if (isSaving) return 'Saving...';
+    if (lastSaved) return `Saved ${formatDistanceToNow(lastSaved, { addSuffix: true })}`;
     return 'Not saved yet';
   };
   return (
@@ -42,7 +58,7 @@ export function AdminHeader({ currentPageTitle, onSave, isSaving, lastSaved }: A
         <h1 className="text-lg font-semibold text-foreground truncate max-w-xs md:max-w-md">{currentPageTitle}</h1>
         <p className="text-sm text-muted-foreground">{getSaveStatus()}</p>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
         <Button variant="outline" onClick={onSave} disabled={isSaving}>
           {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
           Save Draft
@@ -51,6 +67,39 @@ export function AdminHeader({ currentPageTitle, onSave, isSaving, lastSaved }: A
           {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
           Publish
         </Button>
+        <AlertDialog>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Page Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <AlertDialogTrigger asChild>
+                <DropdownMenuItem disabled={!selectedPageId} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Page
+                </DropdownMenuItem>
+              </AlertDialogTrigger>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the page "{currentPage?.title}".
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2">
@@ -64,9 +113,6 @@ export function AdminHeader({ currentPageTitle, onSave, isSaving, lastSaved }: A
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Support</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               Log out

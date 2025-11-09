@@ -1,8 +1,10 @@
 import { Hono } from "hono";
+import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import type { Env } from './core-utils';
-import { PageEntity } from "./entities";
+import { PageEntity, UserEntity } from "./entities";
 import { ok, bad, notFound, isStr } from './core-utils';
-import { Page, PageNode } from "@shared/docs-types";
+import { Page, PageNode, User } from "@shared/docs-types";
+import bcrypt from 'bcryptjs';
 // --- Helper to build the page tree ---
 function buildPageTree(pages: Page[], parentId: string | null = null, parentPath: string = ''): PageNode[] {
   return pages
@@ -30,6 +32,47 @@ function findPageByPath(tree: PageNode[], path: string): PageNode | null {
     return null;
 }
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
+  // --- AUTH ROUTES ---
+  app.post('/api/auth/login', async (c) => {
+    await UserEntity.ensureSeed(c.env);
+    const { password } = await c.req.json<{ password?: string }>();
+    if (!password) return bad(c, 'Password is required');
+    const admin = new UserEntity(c.env, 'admin');
+    if (!(await admin.exists())) {
+      return bad(c, 'Admin user not found. Please seed data.');
+    }
+    const user = await admin.getState();
+    const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+    if (passwordMatch) {
+      // In a real app, use a secure session token (e.g., JWT)
+      const sessionToken = `session_${crypto.randomUUID()}`;
+      setCookie(c, 'auth_session', sessionToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Strict',
+        path: '/',
+        maxAge: 60 * 60 * 24, // 1 day
+      });
+      return ok(c, { id: user.id, name: user.name });
+    }
+    return bad(c, 'Invalid credentials');
+  });
+  app.post('/api/auth/logout', (c) => {
+    deleteCookie(c, 'auth_session', { path: '/' });
+    return ok(c, { message: 'Logged out' });
+  });
+  app.get('/api/auth/me', async (c) => {
+    const session = getCookie(c, 'auth_session');
+    if (session) {
+      // Simple session validation. In a real app, you'd check this against a session store.
+      const admin = new UserEntity(c.env, 'admin');
+      if (await admin.exists()) {
+        const user = await admin.getState();
+        return ok(c, { id: user.id, name: user.name });
+      }
+    }
+    return notFound(c, 'No active session');
+  });
   // --- DOCS ROUTES ---
   // Ensure seed data on first load
   app.use('/api/docs/*', async (c, next) => {
@@ -78,6 +121,15 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     await pageEntity.patch({ ...pageData, lastUpdated: new Date().toISOString() });
     const updatedPage = await pageEntity.getState();
     return ok(c, updatedPage);
+  });
+  // Delete a page
+  app.delete('/api/docs/pages/:id', async (c) => {
+    const { id } = c.req.param();
+    const deleted = await PageEntity.delete(c.env, id);
+    if (deleted) {
+      return ok(c, { id, deleted: true });
+    }
+    return notFound(c, 'Page not found');
   });
   // Reorder pages
   app.post('/api/docs/pages/reorder', async (c) => {
