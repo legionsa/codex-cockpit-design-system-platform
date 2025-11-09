@@ -1,11 +1,8 @@
-import { IndexedEntity } from "./core-utils";
+import { IndexedEntity, Env } from "./core-utils";
 import type { Page, User } from "@shared/docs-types";
 import { MOCK_PAGES } from "@shared/docs-mock-data";
 import bcrypt from 'bcryptjs';
-interface Env {
-  id?: string | number;
-  [key: string]: unknown;
-}
+
 export class PageEntity extends IndexedEntity<Page> {
   static readonly entityName = "page";
   static readonly indexName = "pages";
@@ -42,8 +39,9 @@ export class UserEntity extends IndexedEntity<User> {
     name: "",
     passwordHash: ""
   };
-  // This is a function, not an array, so we override ensureSeed
-  static async seedData(env: Env) {
+  // Override the base ensureSeed to implement custom seeding logic,
+  // as this entity does not use a static seedData array.
+  static override async ensureSeed(env: Env): Promise<void> {
     const users = await this.list(env);
     if (users.items.length === 0) {
       const passwordHash = await bcrypt.hash('password', 10);
@@ -55,9 +53,5 @@ export class UserEntity extends IndexedEntity<User> {
       await this.create(env, adminUser);
       console.log('Seeded admin user with default password.');
     }
-  }
-  // Override the base ensureSeed to call our custom seedData function
-  static override async ensureSeed(env: Env): Promise<void> {
-    await this.seedData(env);
   }
 }

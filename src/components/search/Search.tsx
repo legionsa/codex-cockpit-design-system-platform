@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Fuse from 'fuse.js';
+import Fuse, { type FuseResult } from 'fuse.js';
 import { Page } from '@shared/docs-types';
 import { getAllPages } from '@/lib/docs';
 import {
@@ -15,7 +15,7 @@ import { FileText } from 'lucide-react';
 export function Search({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) {
   const [pages, setPages] = useState<Page[]>([]);
   const [fuse, setFuse] = useState<Fuse<Page> | null>(null);
-  const [results, setResults] = useState<Fuse.FuseResult<Page>[]>([]);
+  const [results, setResults] = useState<FuseResult<Page>[]>([]);
   const navigate = useNavigate();
   useEffect(() => {
     getAllPages().then(data => {

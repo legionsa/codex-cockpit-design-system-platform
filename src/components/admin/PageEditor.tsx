@@ -12,25 +12,15 @@ import Warning from '@editorjs/warning';
 import Delimiter from '@editorjs/delimiter';
 import { PageNode, EditorJSData } from '@shared/docs-types';
 const EDITOR_JS_TOOLS = {
-  // @ts-expect-error - No official types for this community plugin
   paragraph: { class: Paragraph, inlineToolbar: true },
-  // @ts-expect-error - No official types for this community plugin
   header: Header,
-  // @ts-expect-error - No official types for this community plugin
   list: List,
-  // @ts-expect-error - No official types for this community plugin
   code: CodeTool,
-  // @ts-expect-error - No official types for this community plugin
   embed: Embed,
-  // @ts-expect-error - No official types for this community plugin
   table: Table,
-  // @ts-expect-error - No official types for this community plugin
   checklist: Checklist,
-  // @ts-expect-error - No official types for this community plugin
   quote: Quote,
-  // @ts-expect-error - No official types for this community plugin
   warning: Warning,
-  // @ts-expect-error - No official types for this community plugin
   delimiter: Delimiter,
 };
 interface PageEditorProps {
