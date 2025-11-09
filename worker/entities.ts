@@ -1,41 +1,66 @@
-/**
- * Minimal real-world demo: One Durable Object instance per entity (User, ChatBoard), with Indexes for listing.
- */
 import { IndexedEntity } from "./core-utils";
-import type { User, Chat, ChatMessage } from "@shared/types";
-import { MOCK_CHAT_MESSAGES, MOCK_CHATS, MOCK_USERS } from "@shared/mock-data";
-
-// USER ENTITY: one DO instance per user
-export class UserEntity extends IndexedEntity<User> {
-  static readonly entityName = "user";
-  static readonly indexName = "users";
-  static readonly initialState: User = { id: "", name: "" };
-  static seedData = MOCK_USERS;
+import type { Page } from "@shared/docs-types";
+const NEW_PAGE_CONTENT = {
+  time: Date.now(),
+  blocks: [
+    {
+      type: "header",
+      data: {
+        text: "Untitled Page",
+        level: 1,
+      },
+    },
+    {
+      type: "paragraph",
+      data: {
+        text: "Start writing your amazing documentation here.",
+      },
+    },
+  ],
+  version: "2.29.0",
+};
+const SEED_PAGES: Omit<Page, 'id' | 'order' | 'lastUpdated'>[] = [
+  {
+    title: 'Home',
+    slug: 'home',
+    parentId: null,
+    status: 'Published',
+    content: {
+      time: 1731148800000,
+      version: '2.29.0',
+      blocks: [
+        { type: 'header', data: { text: 'Cockpit Design System', level: 1 } },
+        { type: 'paragraph', data: { text: 'Welcome to the single source of truth for the Cockpit Design System (CDS). This is where we merge design, code, and content into a single, living ecosystem.' } },
+        { type: 'header', data: { text: 'Mission & Principles', level: 2 } },
+        { type:Phase 3 connects our admin dashboard to a live backend powered by Cloudflare Durable Objects. I will replace all mock data with real API calls, implement the backend `PageEntity` for data persistence, and create a new Zustand store to manage state on the client. This will transform the dashboard into a fully functional content management system.
+First, I'll remove the now-obsolete `src/lib/docs.ts` file.
+```bash
+rm src/lib/docs.ts
+```
+Next, I'll implement the backend entities and API routes.
+```bash
+# worker/entities.ts: Define the PageEntity for Durable Object storage, removing old demo entities.
+cat > worker/entities.ts << 'EOF'
+import { IndexedEntity } from "./core-utils";
+import type { Page } from "@shared/docs-types";
+import { MOCK_PAGES } from "@shared/docs-mock-data";
+// PAGE ENTITY: one DO instance per documentation page
+export class PageEntity extends IndexedEntity<Page> {
+  static readonly entityName = "page";
+  static readonly indexName = "pages";
+  static readonly initialState: Page = {
+    id: "",
+    title: "New Page",
+    slug: "new-page",
+    parentId: null,
+    order: 0,
+    content: {
+      time: Date.now(),
+      blocks: [],
+      version: "2.29.0"
+    },
+    status: 'Draft',
+    lastUpdated: new Date().toISOString(),
+  };
+  static seedData = MOCK_PAGES;
 }
-
-// CHAT BOARD ENTITY: one DO instance per chat board, stores its own messages
-export type ChatBoardState = Chat & { messages: ChatMessage[] };
-
-const SEED_CHAT_BOARDS: ChatBoardState[] = MOCK_CHATS.map(c => ({
-  ...c,
-  messages: MOCK_CHAT_MESSAGES.filter(m => m.chatId === c.id),
-}));
-
-export class ChatBoardEntity extends IndexedEntity<ChatBoardState> {
-  static readonly entityName = "chat";
-  static readonly indexName = "chats";
-  static readonly initialState: ChatBoardState = { id: "", title: "", messages: [] };
-  static seedData = SEED_CHAT_BOARDS;
-
-  async listMessages(): Promise<ChatMessage[]> {
-    const { messages } = await this.getState();
-    return messages;
-  }
-
-  async sendMessage(userId: string, text: string): Promise<ChatMessage> {
-    const msg: ChatMessage = { id: crypto.randomUUID(), chatId: this.id, userId, text, ts: Date.now() };
-    await this.mutate(s => ({ ...s, messages: [...s.messages, msg] }));
-    return msg;
-  }
-}
-

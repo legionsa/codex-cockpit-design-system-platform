@@ -1,27 +1,26 @@
-import React, { useEffect, useRef } from 'react';
-import EditorJS from '@editorjs/editorjs';
-// @ts-ignore
+import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import EditorJS, { EditorConfig } from '@editorjs/editorjs';
+// @ts-expect-error
 import Header from '@editorjs/header';
-// @ts-ignore
+// @ts-expect-error
 import List from '@editorjs/list';
-// @ts-ignore
+// @ts-expect-error
 import CodeTool from '@editorjs/code';
-// @ts-ignore
+// @ts-expect-error
 import Paragraph from '@editorjs/paragraph';
-// @ts-ignore
+// @ts-expect-error
 import Embed from '@editorjs/embed';
-// @ts-ignore
+// @ts-expect-error
 import Table from '@editorjs/table';
-// @ts-ignore
+// @ts-expect-error
 import Checklist from '@editorjs/checklist';
-// @ts-ignore
+// @ts-expect-error
 import Quote from '@editorjs/quote';
-// @ts-ignore
+// @ts-expect-error
 import Warning from '@editorjs/warning';
-// @ts-ignore
+// @ts-expect-error
 import Delimiter from '@editorjs/delimiter';
-import { MOCK_PAGES } from '@shared/docs-mock-data';
-import { Page } from '@shared/docs-types';
+import { PageNode, EditorJSData } from '@shared/docs-types';
 const EDITOR_JS_TOOLS = {
   paragraph: { class: Paragraph, inlineToolbar: true },
   header: Header,
@@ -35,43 +34,53 @@ const EDITOR_JS_TOOLS = {
   delimiter: Delimiter,
 };
 interface PageEditorProps {
-  pageId: string | null;
+  page: PageNode | null;
 }
-export function PageEditor({ pageId }: PageEditorProps) {
+export const PageEditor = forwardRef<{ save: () => Promise<EditorJSData | undefined> }, PageEditorProps>(({ page }, ref) => {
   const editorInstance = useRef<EditorJS | null>(null);
-  const [pageData, setPageData] = React.useState<Page | null>(null);
+  const editorHolderId = `editorjs-${page?.id || 'new'}`;
+  useImperativeHandle(ref, () => ({
+    save: async () => {
+      if (editorInstance.current) {
+        return await editorInstance.current.save();
+      }
+    },
+  }));
   useEffect(() => {
-    const data = MOCK_PAGES.find(p => p.id === pageId) || null;
-    setPageData(data);
-  }, [pageId]);
-  useEffect(() => {
-    if (pageData && !editorInstance.current) {
+    if (page && !editorInstance.current) {
       const editor = new EditorJS({
-        holder: 'editorjs',
+        holder: editorHolderId,
         tools: EDITOR_JS_TOOLS,
-        data: pageData.content,
+        data: page.content,
         autofocus: true,
-        placeholder: 'Let`s write an awesome story!',
+        placeholder: 'Start writing your documentation...',
+        onChange: () => {
+          // Could implement auto-save here
+        },
       });
       editorInstance.current = editor;
     }
     return () => {
       if (editorInstance.current && typeof editorInstance.current.destroy === 'function') {
-        editorInstance.current.destroy();
+        try {
+          editorInstance.current.destroy();
+        } catch (e) {
+          console.error("Error destroying EditorJS instance:", e);
+        }
         editorInstance.current = null;
       }
     };
-  }, [pageData]);
-  if (!pageId || !pageData) {
+  }, [page, editorHolderId]);
+  if (!page) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        <p>Select a page from the sidebar to start editing.</p>
+      <div className="flex items-center justify-center h-full text-muted-foreground p-8">
+        <p>Select a page from the sidebar to start editing, or create a new one.</p>
       </div>
     );
   }
   return (
     <div className="prose prose-lg dark:prose-invert max-w-none mx-auto py-8 px-12">
-      <div id="editorjs" />
+      <div id={editorHolderId} />
     </div>
   );
-}
+});

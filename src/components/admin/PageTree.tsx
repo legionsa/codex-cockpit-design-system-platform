@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -16,11 +16,11 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { getPageTree } from '@/lib/docs';
 import { PageNode } from '@shared/docs-types';
 import { GripVertical, FileText, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useDocsStore } from '@/hooks/use-docs-store';
 interface SortableItemProps {
   id: string;
   node: PageNode;
@@ -51,8 +51,8 @@ function SortableItem({ id, node, selectedPageId, onSelect, depth }: SortableIte
       )}
       onClick={() => onSelect(id)}
     >
-      <button {...attributes} {...listeners} className="cursor-grab p-1">
-        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      <button {...attributes} {...listeners} className="cursor-grab p-1 -ml-1">
+        <GripVertical className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
       </button>
       <FileText className="h-4 w-4 text-muted-foreground" />
       <span className="flex-1 text-sm truncate">{node.title}</span>
@@ -64,21 +64,17 @@ interface PageTreeProps {
   onSelectPage: (id: string) => void;
 }
 export function PageTree({ selectedPageId, onSelectPage }: PageTreeProps) {
-  const [pageTree, setPageTree] = useState<PageNode[]>([]);
-  const [flattenedTree, setFlattenedTree] = useState<{ id: string; depth: number; node: PageNode }[]>([]);
-  useEffect(() => {
-    getPageTree().then(tree => {
-      setPageTree(tree);
-    });
-  }, []);
-  useEffect(() => {
+  const pageTree = useDocsStore(state => state.pageTree);
+  const addNewPage = useDocsStore(state => state.addNewPage);
+  const reorderPages = useDocsStore(state => state.reorderPages);
+  const flattenedTree = useMemo(() => {
     const flatten = (nodes: PageNode[], depth = 0): { id: string; depth: number; node: PageNode }[] => {
       return nodes.flatMap(node => [
         { id: node.id, depth, node },
         ...flatten(node.children, depth + 1),
       ]);
     };
-    setFlattenedTree(flatten(pageTree));
+    return flatten(pageTree);
   }, [pageTree]);
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -89,19 +85,24 @@ export function PageTree({ selectedPageId, onSelectPage }: PageTreeProps) {
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      setFlattenedTree((items) => {
-        const oldIndex = items.findIndex(item => item.id === active.id);
-        const newIndex = items.findIndex(item => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-      // In a real app, you would update the page order/parent on the backend here.
+      const oldIndex = flattenedTree.findIndex(item => item.id === active.id);
+      const newIndex = flattenedTree.findIndex(item => item.id === over.id);
+      const newItems = arrayMove(flattenedTree, oldIndex, newIndex);
+      // This is a simplified reordering logic. A real implementation would need to handle nesting.
+      // For now, we just update order and assume root level.
+      const updates = newItems.map((item, index) => ({
+        id: item.id,
+        parentId: item.node.parentId, // This needs to be improved for nesting
+        order: index,
+      }));
+      reorderPages(updates);
     }
   }
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-background">
       <div className="p-4 border-b">
         <h2 className="text-lg font-semibold">Pages</h2>
-        <p className="text-sm text-muted-foreground">Drag to reorder and nest pages.</p>
+        <p className="text-sm text-muted-foreground">Drag to reorder pages.</p>
       </div>
       <div className="flex-1 overflow-y-auto p-2">
         <DndContext
@@ -127,7 +128,7 @@ export function PageTree({ selectedPageId, onSelectPage }: PageTreeProps) {
         </DndContext>
       </div>
       <div className="p-4 border-t">
-        <Button variant="outline" className="w-full">
+        <Button variant="outline" className="w-full" onClick={() => addNewPage(null)}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Add New Page
         </Button>
