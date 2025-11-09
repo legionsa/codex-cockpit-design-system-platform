@@ -96,7 +96,8 @@ function runSetupCommands() {
     "bun add dompurify@^3.1.0",
     "bun add @types/dompurify@^3.0.5",
     "bun add resend@^3.4.0",
-    "bun add react-editor-js@^2.1.0"
+    "bun add react-editor-js@^2.1.0",
+    "bun install @tailwindcss/typography"
 ];
     
     if (commands.length === 0) {
