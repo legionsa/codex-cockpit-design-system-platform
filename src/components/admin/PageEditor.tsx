@@ -1,36 +1,36 @@
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import EditorJS, { EditorConfig } from '@editorjs/editorjs';
-// @ts-expect-error - No official types for this community plugin
 import Header from '@editorjs/header';
-// @ts-expect-error - No official types for this community plugin
 import List from '@editorjs/list';
-// @ts-expect-error - No official types for this community plugin
 import CodeTool from '@editorjs/code';
-// @ts-expect-error - No official types for this community plugin
 import Paragraph from '@editorjs/paragraph';
-// @ts-expect-error - No official types for this community plugin
 import Embed from '@editorjs/embed';
-// @ts-expect-error - No official types for this community plugin
 import Table from '@editorjs/table';
-// @ts-expect-error - No official types for this community plugin
 import Checklist from '@editorjs/checklist';
-// @ts-expect-error - No official types for this community plugin
 import Quote from '@editorjs/quote';
-// @ts-expect-error - No official types for this community plugin
 import Warning from '@editorjs/warning';
-// @ts-expect-error - No official types for this community plugin
 import Delimiter from '@editorjs/delimiter';
 import { PageNode, EditorJSData } from '@shared/docs-types';
 const EDITOR_JS_TOOLS = {
+  // @ts-expect-error - No official types for this community plugin
   paragraph: { class: Paragraph, inlineToolbar: true },
+  // @ts-expect-error - No official types for this community plugin
   header: Header,
+  // @ts-expect-error - No official types for this community plugin
   list: List,
+  // @ts-expect-error - No official types for this community plugin
   code: CodeTool,
+  // @ts-expect-error - No official types for this community plugin
   embed: Embed,
+  // @ts-expect-error - No official types for this community plugin
   table: Table,
+  // @ts-expect-error - No official types for this community plugin
   checklist: Checklist,
+  // @ts-expect-error - No official types for this community plugin
   quote: Quote,
+  // @ts-expect-error - No official types for this community plugin
   warning: Warning,
+  // @ts-expect-error - No official types for this community plugin
   delimiter: Delimiter,
 };
 interface PageEditorProps {
@@ -43,7 +43,6 @@ export const PageEditor = forwardRef<{ save: () => Promise<EditorJSData | undefi
     save: async () => {
       if (editorInstance.current) {
         const outputData = await editorInstance.current.save();
-        // Ensure the time property is always present
         return {
           ...outputData,
           time: outputData.time || Date.now(),
@@ -59,14 +58,11 @@ export const PageEditor = forwardRef<{ save: () => Promise<EditorJSData | undefi
         data: page.content,
         autofocus: true,
         placeholder: 'Start writing your documentation...',
-        onChange: () => {
-          // Could implement auto-save here
-        },
       });
       editorInstance.current = editor;
     }
     return () => {
-      if (editorInstance.current && typeof editorInstance.current.destroy === 'function') {
+      if (editorInstance.current?.destroy) {
         try {
           editorInstance.current.destroy();
         } catch (e) {

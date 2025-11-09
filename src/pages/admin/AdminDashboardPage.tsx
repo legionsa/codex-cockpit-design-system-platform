@@ -7,10 +7,11 @@ import {
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { PageTree } from '@/components/admin/PageTree';
 import { PageEditor } from '@/components/admin/PageEditor';
+import { PageMetadataEditor } from '@/components/admin/PageMetadataEditor';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDocsStore, useCurrentPage } from '@/hooks/use-docs-store';
 import { Loader2 } from 'lucide-react';
-import { EditorJSData } from '@shared/docs-types';
+import { EditorJSData, Page } from '@shared/docs-types';
 export function AdminDashboardPage() {
   const fetchPageTree = useDocsStore(state => state.fetchPageTree);
   const loadingState = useDocsStore(state => state.loadingState);
@@ -24,11 +25,11 @@ export function AdminDashboardPage() {
   useEffect(() => {
     fetchPageTree();
   }, [fetchPageTree]);
-  const handleSave = async () => {
+  const handleSave = async (status: Page['status'] = 'Draft') => {
     if (editorRef.current && selectedPageId) {
       const content = await editorRef.current.save();
       if (content) {
-        await updatePageContent(selectedPageId, content);
+        await updatePageContent(selectedPageId, content, status);
       }
     }
   };
@@ -49,7 +50,12 @@ export function AdminDashboardPage() {
       />
       <ResizablePanelGroup direction="horizontal" className="flex-1">
         <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
-          <PageTree selectedPageId={selectedPageId} onSelectPage={selectPage} />
+            <div className="h-full flex flex-col">
+                <ScrollArea className="flex-1">
+                    <PageTree selectedPageId={selectedPageId} onSelectPage={selectPage} />
+                </ScrollArea>
+                <PageMetadataEditor />
+            </div>
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={80}>

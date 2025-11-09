@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Fuse, { type FuseResult } from 'fuse.js';
+import Fuse from 'fuse.js';
 import { Page } from '@shared/docs-types';
 import { getAllPages } from '@/lib/docs';
 import {
@@ -15,13 +15,13 @@ import { FileText } from 'lucide-react';
 export function Search({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) {
   const [pages, setPages] = useState<Page[]>([]);
   const [fuse, setFuse] = useState<Fuse<Page> | null>(null);
-  const [results, setResults] = useState<FuseResult<Page>[]>([]);
+  const [results, setResults] = useState<Fuse.FuseResult<Page>[]>([]);
   const navigate = useNavigate();
   useEffect(() => {
     getAllPages().then(data => {
       setPages(data);
       setFuse(new Fuse(data, {
-        keys: ['title', 'content.blocks.data.text' as any],
+        keys: ['title', 'content.blocks.data.text'],
         includeScore: true,
         threshold: 0.4,
       }));
@@ -38,7 +38,7 @@ export function Search({ open, setOpen }: { open: boolean; setOpen: (open: boole
     navigate(path);
     setOpen(false);
   };
-  // This is a helper to find the path. A better solution would be to have the path in the search data.
+  // This is a hack to find the path. A better solution would be to have the path in the search data.
   const findPathForPage = (pageId: string, pages: Page[]): string => {
       const pageMap = new Map(pages.map(p => [p.id, p]));
       let current = pageMap.get(pageId);

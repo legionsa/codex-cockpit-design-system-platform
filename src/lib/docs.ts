@@ -1,8 +1,9 @@
 import { api } from '@/lib/api-client';
-import { PageNode } from '@shared/docs-types';
+import { Page, PageNode } from '@shared/docs-types';
+// Cached tree to avoid refetching on every navigation
 let pageTreeCache: PageNode[] | null = null;
-export async function getPageTree(): Promise<PageNode[]> {
-  if (pageTreeCache) {
+export async function getPageTree(forceRefresh = false): Promise<PageNode[]> {
+  if (pageTreeCache && !forceRefresh) {
     return pageTreeCache;
   }
   const tree = await api<PageNode[]>('/api/docs/tree');
@@ -13,37 +14,28 @@ export async function getPageBySlug(slug: string): Promise<PageNode | null> {
   try {
     return await api<PageNode>(`/api/docs/page/${slug}`);
   } catch (error) {
-    console.error(`Failed to fetch page for slug: ${slug}`, error);
+    console.error(`Failed to fetch page by slug: ${slug}`, error);
     return null;
   }
 }
-export function findPageInTree(tree: PageNode[], path: string): PageNode | null {
-  for (const node of tree) {
-    if (node.path === path) {
-      return node;
-    }
-    const found = findPageInTree(node.children, path);
-    if (found) return found;
-  }
-  return null;
-}
 export function buildBreadcrumbs(tree: PageNode[], pageId: string): PageNode[] {
   const path: PageNode[] = [];
-  function find(nodes: PageNode[], id: string): boolean {
+  function findNode(nodes: PageNode[], id: string, currentPath: PageNode[]): boolean {
     for (const node of nodes) {
+      const newPath = [...currentPath, node];
       if (node.id === id) {
-        path.unshift(node);
+        path.push(...newPath);
         return true;
       }
-      if (node.children && node.children.length > 0) {
-        if (find(node.children, id)) {
-          path.unshift(node);
-          return true;
-        }
+      if (node.children && findNode(node.children, id, newPath)) {
+        return true;
       }
     }
     return false;
   }
-  find(tree, pageId);
+  findNode(tree, pageId, []);
   return path;
+}
+export async function getAllPages(): Promise<Page[]> {
+    return api<Page[]>('/api/docs/pages');
 }

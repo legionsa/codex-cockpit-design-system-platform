@@ -22,3 +22,8 @@ export interface PageNode extends Page {
   children: PageNode[];
   path: string;
 }
+export interface User {
+  id: string;
+  name: string;
+  passwordHash: string;
+}

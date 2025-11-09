@@ -25,9 +25,10 @@ import { useDocsStore, useCurrentPage } from '@/hooks/use-docs-store';
 import { useNavigate } from 'react-router-dom';
 import { Save, Send, ChevronDown, Loader2, MoreVertical, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { Page } from '@shared/docs-types';
 interface AdminHeaderProps {
   currentPageTitle: string;
-  onSave: () => void;
+  onSave: (status: Page['status']) => void;
   isSaving: boolean;
   lastSaved: Date | null;
 }
@@ -59,11 +60,11 @@ export function AdminHeader({ currentPageTitle, onSave, isSaving, lastSaved }: A
         <p className="text-sm text-muted-foreground">{getSaveStatus()}</p>
       </div>
       <div className="flex items-center gap-2 md:gap-4">
-        <Button variant="outline" onClick={onSave} disabled={isSaving}>
+        <Button variant="outline" onClick={() => onSave('Draft')} disabled={isSaving}>
           {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
           Save Draft
         </Button>
-        <Button onClick={onSave} disabled={isSaving}>
+        <Button onClick={() => onSave('Published')} disabled={isSaving}>
           {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
           Publish
         </Button>

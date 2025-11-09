@@ -2,8 +2,8 @@ import { Hono } from "hono";
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import type { Env } from './core-utils';
 import { PageEntity, UserEntity } from "./entities";
-import { ok, bad, notFound, isStr } from './core-utils';
-import { Page, PageNode, User } from "@shared/docs-types";
+import { ok, bad, notFound } from './core-utils';
+import { Page, PageNode } from "@shared/docs-types";
 import bcrypt from 'bcryptjs';
 // --- Helper to build the page tree ---
 function buildPageTree(pages: Page[], parentId: string | null = null, parentPath: string = ''): PageNode[] {
@@ -44,7 +44,6 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const user = await admin.getState();
     const passwordMatch = await bcrypt.compare(password, user.passwordHash);
     if (passwordMatch) {
-      // In a real app, use a secure session token (e.g., JWT)
       const sessionToken = `session_${crypto.randomUUID()}`;
       setCookie(c, 'auth_session', sessionToken, {
         httpOnly: true,
@@ -64,7 +63,6 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   app.get('/api/auth/me', async (c) => {
     const session = getCookie(c, 'auth_session');
     if (session) {
-      // Simple session validation. In a real app, you'd check this against a session store.
       const admin = new UserEntity(c.env, 'admin');
       if (await admin.exists()) {
         const user = await admin.getState();
@@ -74,18 +72,19 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return notFound(c, 'No active session');
   });
   // --- DOCS ROUTES ---
-  // Ensure seed data on first load
   app.use('/api/docs/*', async (c, next) => {
     await PageEntity.ensureSeed(c.env);
     await next();
   });
-  // Get the entire page hierarchy
   app.get('/api/docs/tree', async (c) => {
-    const { items: allPages } = await PageEntity.list(c.env, null, 1000); // Assuming max 1000 pages
+    const { items: allPages } = await PageEntity.list(c.env, null, 1000);
     const tree = buildPageTree(allPages);
     return ok(c, tree);
   });
-  // Get a single page by its full slug path (for public site)
+  app.get('/api/docs/pages', async (c) => {
+    const { items: allPages } = await PageEntity.list(c.env, null, 1000);
+    return ok(c, allPages);
+  });
   app.get('/api/docs/page/*', async (c) => {
     const path = c.req.path.replace('/api/docs/page/', '');
     const { items: allPages } = await PageEntity.list(c.env, null, 1000);
@@ -96,7 +95,6 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     }
     return notFound(c, 'Page not found');
   });
-  // Create a new page
   app.post('/api/docs/pages', async (c) => {
     const { parentId, order } = await c.req.json<{ parentId: string | null; order: number }>();
     const newPageData: Page = {
@@ -110,7 +108,6 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const page = await PageEntity.create(c.env, newPageData);
     return ok(c, page);
   });
-  // Update a page
   app.put('/api/docs/pages/:id', async (c) => {
     const { id } = c.req.param();
     const pageData = await c.req.json<Partial<Page>>();
@@ -122,7 +119,6 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const updatedPage = await pageEntity.getState();
     return ok(c, updatedPage);
   });
-  // Delete a page
   app.delete('/api/docs/pages/:id', async (c) => {
     const { id } = c.req.param();
     const deleted = await PageEntity.delete(c.env, id);
@@ -131,7 +127,6 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     }
     return notFound(c, 'Page not found');
   });
-  // Reorder pages
   app.post('/api/docs/pages/reorder', async (c) => {
     const updates = await c.req.json<{ id: string; parentId: string | null; order: number }[]>();
     if (!Array.isArray(updates)) {

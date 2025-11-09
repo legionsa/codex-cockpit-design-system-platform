@@ -13,7 +13,8 @@ interface DocsState {
   lastSaved: Date | null;
   fetchPageTree: () => Promise<void>;
   selectPage: (id: string | null) => void;
-  updatePageContent: (pageId: string, content: EditorJSData) => Promise<void>;
+  updatePageContent: (pageId: string, content: EditorJSData, status: Page['status']) => Promise<void>;
+  updatePageMeta: (pageId: string, meta: { title: string; slug: string }) => Promise<void>;
   addNewPage: (parentId: string | null) => Promise<void>;
   reorderPages: (updates: { id: string; parentId: string | null; order: number }[]) => Promise<void>;
   deletePage: (pageId: string) => Promise<void>;
@@ -62,26 +63,44 @@ export const useDocsStore = create<DocsState>((set, get) => ({
   selectPage: (id: string | null) => {
     set({ selectedPageId: id });
   },
-  updatePageContent: async (pageId: string, content: EditorJSData) => {
+  updatePageContent: async (pageId: string, content: EditorJSData, status: Page['status']) => {
     set({ isSaving: true });
     try {
       const updatedPage = await api<Page>(`/api/docs/pages/${pageId}`, {
         method: 'PUT',
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, status }),
       });
       const newTree = produce(get().pageTree, draft => {
         const page = findAndGetPage(draft, pageId);
         if (page) {
           page.content = updatedPage.content;
+          page.status = updatedPage.status;
           page.lastUpdated = updatedPage.lastUpdated;
         }
       });
       set({ pageTree: newTree, isSaving: false, lastSaved: new Date() });
-      toast.success('Page saved successfully!');
+      toast.success(`Page ${status === 'Published' ? 'published' : 'saved'} successfully!`);
     } catch (error) {
       console.error("Failed to save page", error);
       set({ isSaving: false });
       toast.error('Failed to save page.');
+    }
+  },
+  updatePageMeta: async (pageId: string, meta: { title: string; slug: string }) => {
+    set({ isSaving: true });
+    try {
+        const updatedPage = await api<Page>(`/api/docs/pages/${pageId}`, {
+            method: 'PUT',
+            body: JSON.stringify(meta),
+        });
+        // Refetch tree because slug change affects path
+        await get().fetchPageTree();
+        set({ isSaving: false, lastSaved: new Date() });
+        toast.success('Page settings saved.');
+    } catch (error) {
+        console.error("Failed to update page metadata", error);
+        set({ isSaving: false });
+        toast.error('Failed to save settings.');
     }
   },
   addNewPage: async (parentId: string | null) => {
