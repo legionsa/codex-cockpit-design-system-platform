@@ -77,7 +77,27 @@ function updateWranglerJsonc() {
 }
 
 function runSetupCommands() {
-    const commands = [];
+    const commands = [
+    "bun add @editorjs/editorjs@^2.29.0",
+    "bun add @editorjs/header@^2.8.0",
+    "bun add @editorjs/list@^1.9.0",
+    "bun add @editorjs/paragraph@^2.11.0",
+    "bun add @editorjs/code@^2.9.0",
+    "bun add @editorjs/embed@^2.7.0",
+    "bun add @editorjs/image@^2.9.0",
+    "bun add @editorjs/table@^2.3.0",
+    "bun add @editorjs/checklist@^1.6.0",
+    "bun add @editorjs/quote@^2.6.0",
+    "bun add @editorjs/warning@^1.4.0",
+    "bun add @editorjs/delimiter@^1.4.0",
+    "bun add fuse.js@^7.0.0",
+    "bun add bcryptjs@^2.4.3",
+    "bun add @types/bcryptjs@^2.4.6",
+    "bun add dompurify@^3.1.0",
+    "bun add @types/dompurify@^3.0.5",
+    "bun add resend@^3.4.0",
+    "bun add react-editor-js@^2.1.0"
+];
     
     if (commands.length === 0) {
         console.log('⊘ No setup commands to run');
