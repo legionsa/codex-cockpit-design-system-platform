@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -107,7 +107,7 @@ export function PageTree({ selectedPageId, onSelectPage }: PageTreeProps) {
   const addNewPage = useDocsStore(state => state.addNewPage);
   const reorderPages = useDocsStore(state => state.reorderPages);
   const deletePage = useDocsStore(state => state.deletePage);
-  const flattenedTree = React.useMemo(() => {
+  const flattenedTree = useMemo(() => {
     const flatten = (nodes: PageNode[], depth = 0): { id: string; depth: number; node: PageNode }[] => {
       return nodes.flatMap(node => [
         { id: node.id, depth, node },
@@ -127,12 +127,76 @@ export function PageTree({ selectedPageId, onSelectPage }: PageTreeProps) {
     if (over && active.id !== over.id) {
       const oldIndex = flattenedTree.findIndex(item => item.id === active.id);
       const newIndex = flattenedTree.findIndex(item => item.id === over.id);
-      const newItems = arrayMove(flattenedTree, oldIndex, newIndex);
-      const updates = newItems.map((item, index) => ({
-        id: item.id,
-        parentId: item.node.parentId,
-        order: index,
-      }));
+      if (oldIndex === -1 || newIndex === -1) return;
+      const movedItem = flattenedTree[oldIndex];
+      const targetItem = flattenedTree[newIndex];
+      // Simple reorder within the same parent
+      const newParentId = targetItem.node.parentId;
+      const itemsInParent = flattenedTree.filter(item => item.node.parentId === newParentId);
+      const oldParentIndex = itemsInParent.findIndex(item => item.id === active.id);
+      const newParentIndex = itemsInParent.findIndex(item => item.id === over.id);
+      const updates: { id: string; parentId: string | null; order: number }[] = [];
+      // Create a mutable copy of the tree to simulate the move
+      const tempTree = JSON.parse(JSON.stringify(pageTree)) as PageNode[];
+      // 1. Remove the item from its original position
+      let foundItem: PageNode | undefined;
+      const removeItem = (nodes: PageNode[], id: string): PageNode[] => {
+        return nodes.filter(node => {
+          if (node.id === id) {
+            foundItem = node;
+            return false;
+          }
+          node.children = removeItem(node.children, id);
+          return true;
+        });
+      };
+      const treeWithoutMoved = removeItem(tempTree, active.id as string);
+      if (!foundItem) return;
+      // 2. Update parentId and insert it into the new position
+      foundItem.parentId = newParentId;
+      const insertItem = (nodes: PageNode[], targetParentId: string | null, itemToInsert: PageNode): boolean => {
+        if (targetParentId === null) {
+            const targetNodeIndex = nodes.findIndex(n => n.id === over.id);
+            if(targetNodeIndex > -1) {
+                nodes.splice(targetNodeIndex, 0, itemToInsert);
+                return true;
+            }
+        }
+        for (const node of nodes) {
+          if (node.id === targetParentId) {
+            const targetNodeIndex = node.children.findIndex(n => n.id === over.id);
+            if (targetNodeIndex > -1) {
+                node.children.splice(targetNodeIndex, 0, itemToInsert);
+            } else {
+                node.children.push(itemToInsert);
+            }
+            return true;
+          }
+          if (insertItem(node.children, targetParentId, itemToInsert)) {
+            return true;
+          }
+        }
+        return false;
+      };
+      if (!insertItem(treeWithoutMoved, newParentId, foundItem)) {
+          // Fallback for dropping at root level
+          const targetNodeIndex = treeWithoutMoved.findIndex(n => n.id === over.id);
+          if(targetNodeIndex > -1) {
+            treeWithoutMoved.splice(targetNodeIndex, 0, foundItem);
+          } else {
+            treeWithoutMoved.push(foundItem);
+          }
+      }
+      // 3. Flatten the new tree and generate order updates
+      const reorder = (nodes: PageNode[], parentId: string | null = null) => {
+        nodes.forEach((node, index) => {
+          updates.push({ id: node.id, parentId: parentId, order: index });
+          if (node.children) {
+            reorder(node.children, node.id);
+          }
+        });
+      };
+      reorder(treeWithoutMoved);
       reorderPages(updates);
     }
   }
