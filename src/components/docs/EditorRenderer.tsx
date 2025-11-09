@@ -2,13 +2,14 @@ import React from 'react';
 import { EditorJSData, EditorJSBlock } from '@shared/docs-types';
 const renderBlock = (block: EditorJSBlock) => {
   switch (block.type) {
-    case 'header':
+    case 'header': {
       const Tag = `h${block.data.level}` as keyof JSX.IntrinsicElements;
       const id = block.data.text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
       return <Tag key={block.id} id={id} dangerouslySetInnerHTML={{ __html: block.data.text }} />;
+    }
     case 'paragraph':
       return <p key={block.id} dangerouslySetInnerHTML={{ __html: block.data.text }} />;
-    case 'list':
+    case 'list': {
       const ListTag = block.data.style === 'ordered' ? 'ol' : 'ul';
       return (
         <ListTag key={block.id}>
@@ -17,6 +18,7 @@ const renderBlock = (block: EditorJSBlock) => {
           ))}
         </ListTag>
       );
+    }
     case 'code':
       return (
         <pre key={block.id} className="bg-muted text-muted-foreground p-4 rounded-md overflow-x-auto">

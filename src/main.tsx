@@ -13,6 +13,9 @@ import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 import '@/index.css'
 import { HomePage } from '@/pages/HomePage'
 import { DocsPage } from '@/pages/DocsPage';
+import { AdminLoginPage } from '@/pages/admin/AdminLoginPage';
+import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 const router = createBrowserRouter([
   {
     path: "/",
@@ -29,6 +32,29 @@ const router = createBrowserRouter([
       },
     ],
   },
+  {
+    path: "/admin",
+    errorElement: <RouteErrorBoundary />,
+    children: [
+      {
+        path: "login",
+        element: <AdminLoginPage />,
+      },
+      {
+        element: <ProtectedRoute />,
+        children: [
+          {
+            path: "dashboard",
+            element: <AdminDashboardPage />,
+          },
+          {
+            path: "",
+            element: <Navigate to="/admin/dashboard" replace />,
+          }
+        ]
+      }
+    ]
+  }
 ]);
 // Do not touch this code
 createRoot(document.getElementById('root')!).render(

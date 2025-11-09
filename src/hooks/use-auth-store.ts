@@ -1,66 +1,33 @@
 import { create } from 'zustand';
-import { api } from '@/lib/api-client';
-type User = {
-  id: string;
-  name: string;
-};
+import { persist, createJSONStorage } from 'zustand/middleware';
 interface AuthState {
   isAuthenticated: boolean;
-  isAuthLoading: boolean;
-  user: User | null;
+  user: { name: string } | null;
   login: (password: string) => Promise<boolean>;
-  logout: () => Promise<void>;
-  checkSession: () => Promise<void>;
-  changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
+  logout: () => void;
 }
-export const useAuthStore = create<AuthState>((set) => ({
-  isAuthenticated: false,
-  isAuthLoading: true, // Start as true to check session on load
-  user: null,
-  checkSession: async () => {
-    set({ isAuthLoading: true });
-    try {
-      const user = await api<User>('/api/auth/me');
-      set({ isAuthenticated: true, user, isAuthLoading: false });
-    } catch (error) {
-      set({ isAuthenticated: false, user: null, isAuthLoading: false });
+// In a real app, this would be a secure check against a backend.
+// For this phase, we'll use a mock password.
+const MOCK_PASSWORD = 'password';
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      isAuthenticated: false,
+      user: null,
+      login: async (password: string) => {
+        if (password === MOCK_PASSWORD) {
+          set({ isAuthenticated: true, user: { name: 'Admin User' } });
+          return true;
+        }
+        return false;
+      },
+      logout: () => {
+        set({ isAuthenticated: false, user: null });
+      },
+    }),
+    {
+      name: 'auth-storage', // name of the item in the storage (must be unique)
+      storage: createJSONStorage(() => sessionStorage), // (optional) by default, 'localStorage' is used
     }
-  },
-  login: async (password: string) => {
-    try {
-      const user = await api<User>('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ password }),
-      });
-      set({ isAuthenticated: true, user });
-      return true;
-    } catch (error) {
-      console.error('Login failed:', error);
-      set({ isAuthenticated: false, user: null });
-      return false;
-    }
-  },
-  logout: async () => {
-    try {
-      await api('/api/auth/logout', { method: 'POST' });
-    } catch (error) {
-      console.error('Logout failed:', error);
-    } finally {
-      set({ isAuthenticated: false, user: null });
-    }
-  },
-  changePassword: async (currentPassword: string, newPassword: string) => {
-    try {
-      await api('/api/auth/change-password', {
-        method: 'POST',
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
-      return true;
-    } catch (error) {
-      console.error('Password change failed:', error);
-      return false;
-    }
-  },
-}));
-// Initialize session check
-useAuthStore.getState().checkSession();
+  )
+);
