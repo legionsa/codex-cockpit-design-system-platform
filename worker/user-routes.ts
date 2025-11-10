@@ -11,7 +11,7 @@ function buildPageTree(pages: Page[], parentId: string | null = null, parentPath
     .filter(page => page.parentId === parentId)
     .sort((a, b) => a.order - b.order)
     .map(page => {
-      const path = `${parentPath}/${page.slug}`.replace(/^\//, '');
+      const path = parentPath ? `${parentPath}/${page.slug}` : page.slug;
       return {
         ...page,
         path,
