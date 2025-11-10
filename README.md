@@ -1,6 +1,6 @@
 # Codex: The Cockpit Design System Platform
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/legionsa/codex-cockpit-design-system-platform)
 
 Codex is a sophisticated, public-facing documentation platform designed to be the single source of truth for the Cockpit Design System (CDS). It merges design principles, UI component documentation, and code examples into a cohesive, living ecosystem. The platform features a minimalist, reader-focused public site and a powerful, secure admin dashboard. The public site provides a hierarchical navigation structure, automatic breadcrumbs, and a lightning-fast search experience. The admin dashboard empowers contributors with a block-based visual editor (Editor.js) to create, organize, and manage content seamlessly. The entire application is built on a high-performance, serverless architecture using Cloudflare Workers and Durable Objects for persistent storage, ensuring scalability and speed.
 
@@ -99,7 +99,7 @@ This project is designed for seamless deployment to Cloudflare.
 
 Alternatively, you can deploy your own version of this project with a single click.
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/legionsa/codex-cockpit-design-system-platform)
 
 ## ⚖️ License
 
