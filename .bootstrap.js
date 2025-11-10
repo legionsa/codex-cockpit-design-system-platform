@@ -100,7 +100,8 @@ function runSetupCommands() {
     "bun install @tailwindcss/typography",
     "bun add @editorjs/header @editorjs/list @editorjs/code @editorjs/embed @editorjs/table @editorjs/checklist @editorjs/quote",
     "bun add @editorjs/warning",
-    "bun add @editorjs/delimiter @editorjs/inline-code @editorjs/marker"
+    "bun add @editorjs/delimiter @editorjs/inline-code @editorjs/marker",
+    "bun install fuse.js"
 ];
     
     if (commands.length === 0) {
