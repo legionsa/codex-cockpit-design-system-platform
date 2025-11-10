@@ -16,6 +16,7 @@ import { DocsPage } from '@/pages/DocsPage';
 import { AdminLoginPage } from '@/pages/admin/AdminLoginPage';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { ChangelogPage } from '@/pages/ChangelogPage';
 const router = createBrowserRouter([
   {
     path: "/",
@@ -26,6 +27,10 @@ const router = createBrowserRouter([
     element: <HomePage />,
     errorElement: <RouteErrorBoundary />,
     children: [
+      {
+        path: "changelog",
+        element: <ChangelogPage />,
+      },
       {
         path: "*",
         element: <DocsPage />,

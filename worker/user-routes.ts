@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import type { Env } from './core-utils';
-import { PageEntity, UserEntity } from "./entities";
+import { PageEntity, UserEntity, ChangelogEntity } from "./entities";
 import { ok, bad, notFound } from './core-utils';
 import { Page, PageNode } from "@shared/docs-types";
 import bcrypt from 'bcryptjs';
@@ -89,7 +89,13 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // --- DOCS ROUTES ---
   app.use('/api/docs/*', async (c, next) => {
     await PageEntity.ensureSeed(c.env);
+    await ChangelogEntity.ensureSeed(c.env);
     await next();
+  });
+  app.get('/api/docs/changelog', async (c) => {
+    const { items: allEntries } = await ChangelogEntity.list(c.env, null, 1000);
+    allEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return ok(c, allEntries);
   });
   app.get('/api/docs/tree', async (c) => {
     const { items: allPages } = await PageEntity.list(c.env, null, 1000);

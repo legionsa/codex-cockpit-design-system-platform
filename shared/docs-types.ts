@@ -27,3 +27,9 @@ export interface User {
   name: string;
   passwordHash: string;
 }
+export interface ChangelogEntry {
+  id: string;
+  version: string;
+  date: string;
+  content: EditorJSData;
+}
