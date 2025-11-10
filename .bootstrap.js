@@ -101,7 +101,8 @@ function runSetupCommands() {
     "bun add @editorjs/header @editorjs/list @editorjs/code @editorjs/embed @editorjs/table @editorjs/checklist @editorjs/quote",
     "bun add @editorjs/warning",
     "bun add @editorjs/delimiter @editorjs/inline-code @editorjs/marker",
-    "bun install fuse.js"
+    "bun install fuse.js",
+    "bun add bcryptjs"
 ];
     
     if (commands.length === 0) {
