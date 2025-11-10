@@ -1,8 +1,6 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, LogIn } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 export function HomePageNotFound() {
   return (
     <div className="flex items-center justify-center w-full py-20">
@@ -20,12 +18,6 @@ export function HomePageNotFound() {
           <p>
             To get started, please log in to the admin dashboard and create your first page. This will become the landing page for your documentation site.
           </p>
-          <Button asChild>
-            <Link to="/admin/login">
-              <LogIn className="mr-2 h-4 w-4" />
-              Go to Admin Login
-            </Link>
-          </Button>
         </CardContent>
       </Card>
     </div>
