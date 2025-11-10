@@ -99,7 +99,8 @@ function runSetupCommands() {
     "bun add react-editor-js@^2.1.0",
     "bun install @tailwindcss/typography",
     "bun add @editorjs/header @editorjs/list @editorjs/code @editorjs/embed @editorjs/table @editorjs/checklist @editorjs/quote",
-    "bun add @editorjs/warning"
+    "bun add @editorjs/warning",
+    "bun add @editorjs/delimiter @editorjs/inline-code @editorjs/marker"
 ];
     
     if (commands.length === 0) {
