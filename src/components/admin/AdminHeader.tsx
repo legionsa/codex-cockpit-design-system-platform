@@ -23,7 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthStore } from '@/hooks/use-auth-store';
 import { useDocsStore, useCurrentPage } from '@/hooks/use-docs-store';
 import { useNavigate } from 'react-router-dom';
-import { Save, Send, ChevronDown, Loader2, MoreVertical, Trash2 } from 'lucide-react';
+import { Save, Send, ChevronDown, Loader2, MoreVertical, Trash2, ExternalLink, KeyRound } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Page } from '@shared/docs-types';
 interface AdminHeaderProps {
@@ -31,8 +31,9 @@ interface AdminHeaderProps {
   onSave: (status: Page['status']) => void;
   isSaving: boolean;
   lastSaved: Date | null;
+  onOpenChangePassword: () => void;
 }
-export function AdminHeader({ currentPageTitle, onSave, isSaving, lastSaved }: AdminHeaderProps) {
+export function AdminHeader({ currentPageTitle, onSave, isSaving, lastSaved, onOpenChangePassword }: AdminHeaderProps) {
   const user = useAuthStore(state => state.user);
   const logout = useAuthStore(state => state.logout);
   const deletePage = useDocsStore(state => state.deletePage);
@@ -60,6 +61,12 @@ export function AdminHeader({ currentPageTitle, onSave, isSaving, lastSaved }: A
         <p className="text-sm text-muted-foreground">{getSaveStatus()}</p>
       </div>
       <div className="flex items-center gap-2 md:gap-4">
+        <Button variant="outline" asChild>
+          <a href="/" target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="mr-2 h-4 w-4" />
+            View Site
+          </a>
+        </Button>
         <Button variant="outline" onClick={() => onSave('Draft')} disabled={isSaving}>
           {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
           Save Draft
@@ -114,6 +121,11 @@ export function AdminHeader({ currentPageTitle, onSave, isSaving, lastSaved }: A
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onOpenChangePassword}>
+              <KeyRound className="mr-2 h-4 w-4" />
+              Change Password
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               Log out

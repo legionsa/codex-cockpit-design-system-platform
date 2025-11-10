@@ -68,6 +68,13 @@ function SortableItem({ id, node, selectedPageId, onSelect, onDelete, depth }: S
       <div className="flex-1 flex items-center gap-2" onClick={() => onSelect(id)}>
         <FileText className="h-4 w-4 text-muted-foreground" />
         <span className="flex-1 text-sm truncate">{node.title}</span>
+        <div
+          className={cn(
+            'h-2 w-2 rounded-full',
+            node.status === 'Published' ? 'bg-green-500' : 'bg-gray-400'
+          )}
+          title={node.status}
+        />
       </div>
       <AlertDialog>
         <AlertDialogTrigger asChild>

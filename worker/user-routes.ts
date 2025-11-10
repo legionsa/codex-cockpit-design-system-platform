@@ -71,6 +71,21 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     }
     return notFound(c, 'No active session');
   });
+  app.post('/api/auth/change-password', async (c) => {
+    const session = getCookie(c, 'auth_session');
+    if (!session) return notFound(c, 'No active session');
+    const { currentPassword, newPassword } = await c.req.json<{ currentPassword?: string; newPassword?: string }>();
+    if (!currentPassword || !newPassword) return bad(c, 'All fields are required');
+    if (newPassword.length < 8) return bad(c, 'New password must be at least 8 characters');
+    const admin = new UserEntity(c.env, 'admin');
+    if (!(await admin.exists())) return bad(c, 'Admin user not found');
+    const user = await admin.getState();
+    const passwordMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!passwordMatch) return bad(c, 'Invalid current password');
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    await admin.patch({ passwordHash: newPasswordHash });
+    return ok(c, { message: 'Password changed successfully' });
+  });
   // --- DOCS ROUTES ---
   app.use('/api/docs/*', async (c, next) => {
     await PageEntity.ensureSeed(c.env);

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ResizableHandle,
   ResizablePanel,
@@ -12,6 +12,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDocsStore, useCurrentPage } from '@/hooks/use-docs-store';
 import { Loader2 } from 'lucide-react';
 import { EditorJSData, Page } from '@shared/docs-types';
+import { ChangePasswordDialog } from '@/components/admin/ChangePasswordDialog';
+import { EditorPlaceholder } from '@/components/admin/EditorPlaceholder';
 export function AdminDashboardPage() {
   const fetchPageTree = useDocsStore(state => state.fetchPageTree);
   const loadingState = useDocsStore(state => state.loadingState);
@@ -22,6 +24,7 @@ export function AdminDashboardPage() {
   const lastSaved = useDocsStore(state => state.lastSaved);
   const currentPage = useCurrentPage();
   const editorRef = useRef<{ save: () => Promise<EditorJSData | undefined> }>(null);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   useEffect(() => {
     fetchPageTree();
   }, [fetchPageTree]);
@@ -47,7 +50,9 @@ export function AdminDashboardPage() {
         onSave={handleSave}
         isSaving={isSaving}
         lastSaved={lastSaved}
+        onOpenChangePassword={() => setIsPasswordDialogOpen(true)}
       />
+      <ChangePasswordDialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen} />
       <ResizablePanelGroup direction="horizontal" className="flex-1">
         <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
             <div className="h-full flex flex-col">
@@ -60,11 +65,15 @@ export function AdminDashboardPage() {
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={80}>
           <ScrollArea className="h-full">
-            <PageEditor
-              key={selectedPageId} // Re-mount editor when page changes
-              page={currentPage}
-              ref={editorRef}
-            />
+            {currentPage ? (
+              <PageEditor
+                key={selectedPageId} // Re-mount editor when page changes
+                page={currentPage}
+                ref={editorRef}
+              />
+            ) : (
+              <EditorPlaceholder />
+            )}
           </ScrollArea>
         </ResizablePanel>
       </ResizablePanelGroup>

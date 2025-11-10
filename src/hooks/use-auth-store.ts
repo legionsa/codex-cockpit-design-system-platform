@@ -11,6 +11,7 @@ interface AuthState {
   login: (password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   checkSession: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
 }
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
@@ -46,6 +47,18 @@ export const useAuthStore = create<AuthState>((set) => ({
       console.error('Logout failed:', error);
     } finally {
       set({ isAuthenticated: false, user: null });
+    }
+  },
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    try {
+      await api('/api/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      return true;
+    } catch (error) {
+      console.error('Password change failed:', error);
+      return false;
     }
   },
 }));
