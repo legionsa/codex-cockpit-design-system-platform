@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import * as Fuse from 'fuse.js';
+import Fuse from 'fuse.js';
 import { Page } from '@shared/docs-types';
 import { getAllPages } from '@/lib/docs';
 import {
@@ -21,7 +21,7 @@ export function Search({ open, setOpen }: { open: boolean; setOpen: (open: boole
     getAllPages().then(data => {
       setPages(data);
       setFuse(new Fuse(data, {
-        keys: ['title', 'content.blocks.data.text'] as any,
+        keys: ['title', 'content.blocks.data.text' as any],
         includeScore: true,
         threshold: 0.4,
       }));
@@ -38,7 +38,7 @@ export function Search({ open, setOpen }: { open: boolean; setOpen: (open: boole
     navigate(path);
     setOpen(false);
   };
-  // This is a hack to find the path. A better solution would be to have the path in the search data.
+  // This is a helper to find the path. A better solution would be to have the path in the search data.
   const findPathForPage = (pageId: string, pages: Page[]): string => {
       const pageMap = new Map(pages.map(p => [p.id, p]));
       let current = pageMap.get(pageId);
