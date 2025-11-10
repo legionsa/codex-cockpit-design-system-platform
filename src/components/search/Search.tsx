@@ -21,7 +21,7 @@ export function Search({ open, setOpen }: { open: boolean; setOpen: (open: boole
     getAllPages().then(data => {
       setPages(data);
       setFuse(new Fuse(data, {
-        keys: ['title', 'content.blocks.data.text'],
+        keys: ['title', 'content.blocks.data.text'] as any,
         includeScore: true,
         threshold: 0.4,
       }));
