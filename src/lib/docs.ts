@@ -6,9 +6,14 @@ export async function getPageTree(forceRefresh = false): Promise<PageNode[]> {
   if (pageTreeCache && !forceRefresh) {
     return pageTreeCache;
   }
-  const tree = await api<PageNode[]>('/api/docs/tree');
-  pageTreeCache = tree;
-  return tree;
+  try {
+    const tree = await api<PageNode[]>('/api/docs/tree');
+    pageTreeCache = tree;
+    return tree;
+  } catch (error) {
+    console.error('Failed to fetch page tree:', error);
+    return [];
+  }
 }
 export async function getPageBySlug(slug: string): Promise<PageNode | null> {
   try {
@@ -37,5 +42,10 @@ export function buildBreadcrumbs(tree: PageNode[], pageId: string): PageNode[] {
   return path;
 }
 export async function getAllPages(): Promise<Page[]> {
-    return api<Page[]>('/api/docs/pages');
+    try {
+        return await api<Page[]>('/api/docs/pages');
+    } catch (error) {
+        console.error('Failed to fetch all pages:', error);
+        return [];
+    }
 }
