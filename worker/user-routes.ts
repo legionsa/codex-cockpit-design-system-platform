@@ -3,7 +3,7 @@ import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import type { Env } from './core-utils';
 import { PageEntity, UserEntity, ChangelogEntity } from "./entities";
 import { ok, bad, notFound } from './core-utils';
-import { Page, PageNode } from "@shared/docs-types";
+import { Page, PageNode, ChangelogEntry } from "@shared/docs-types";
 import bcrypt from 'bcryptjs';
 // --- Helper to build the page tree ---
 function buildPageTree(pages: Page[], parentId: string | null = null, parentPath: string = ''): PageNode[] {
@@ -11,7 +11,7 @@ function buildPageTree(pages: Page[], parentId: string | null = null, parentPath
     .filter(page => page.parentId === parentId)
     .sort((a, b) => a.order - b.order)
     .map(page => {
-      const path = parentPath ? `${parentPath}/${page.slug}` : page.slug;
+      const path = parentId === null ? page.slug : (parentPath ? `${parentPath}/${page.slug}` : page.slug);
       return {
         ...page,
         path,
@@ -32,6 +32,18 @@ function findPageByPath(tree: PageNode[], path: string): PageNode | null {
     return null;
 }
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
+  // --- AUTH MIDDLEWARE ---
+  app.use('/api/docs/*', async (c, next) => {
+    if (['GET'].includes(c.req.method)) {
+      return next();
+    }
+    const session = getCookie(c, 'auth_session');
+    if (!session) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401);
+    }
+    // In a real app, you'd validate the session token here
+    await next();
+  });
   // --- AUTH ROUTES ---
   app.post('/api/auth/login', async (c) => {
     await UserEntity.ensureSeed(c.env);
@@ -86,17 +98,43 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     await admin.patch({ passwordHash: newPasswordHash });
     return ok(c, { message: 'Password changed successfully' });
   });
-  // --- DOCS ROUTES ---
+  // --- DOCS & CHANGELOG ROUTES ---
   app.use('/api/docs/*', async (c, next) => {
     await PageEntity.ensureSeed(c.env);
     await ChangelogEntity.ensureSeed(c.env);
     await next();
   });
+  // --- CHANGELOG CRUD ---
   app.get('/api/docs/changelog', async (c) => {
     const { items: allEntries } = await ChangelogEntity.list(c.env, null, 1000);
     allEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return ok(c, allEntries);
   });
+  app.post('/api/docs/changelog', async (c) => {
+    const entryData = await c.req.json<Omit<ChangelogEntry, 'id'>>();
+    const newEntry: ChangelogEntry = {
+      ...ChangelogEntity.initialState,
+      ...entryData,
+      id: crypto.randomUUID(),
+    };
+    const created = await ChangelogEntity.create(c.env, newEntry);
+    return ok(c, created);
+  });
+  app.put('/api/docs/changelog/:id', async (c) => {
+    const { id } = c.req.param();
+    const entryData = await c.req.json<Partial<ChangelogEntry>>();
+    const entity = new ChangelogEntity(c.env, id);
+    if (!(await entity.exists())) return notFound(c, 'Changelog entry not found');
+    await entity.patch(entryData);
+    return ok(c, await entity.getState());
+  });
+  app.delete('/api/docs/changelog/:id', async (c) => {
+    const { id } = c.req.param();
+    const deleted = await ChangelogEntity.delete(c.env, id);
+    if (deleted) return ok(c, { id, deleted: true });
+    return notFound(c, 'Changelog entry not found');
+  });
+  // --- PAGES CRUD ---
   app.get('/api/docs/tree', async (c) => {
     const { items: allPages } = await PageEntity.list(c.env, null, 1000);
     const tree = buildPageTree(allPages);
@@ -111,9 +149,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const { items: allPages } = await PageEntity.list(c.env, null, 1000);
     const tree = buildPageTree(allPages);
     const page = findPageByPath(tree, path);
-    if (page) {
-      return ok(c, page);
-    }
+    if (page) return ok(c, page);
     return notFound(c, 'Page not found');
   });
   app.post('/api/docs/pages', async (c) => {
@@ -133,26 +169,19 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const { id } = c.req.param();
     const pageData = await c.req.json<Partial<Page>>();
     const pageEntity = new PageEntity(c.env, id);
-    if (!(await pageEntity.exists())) {
-      return notFound(c, 'Page not found');
-    }
+    if (!(await pageEntity.exists())) return notFound(c, 'Page not found');
     await pageEntity.patch({ ...pageData, lastUpdated: new Date().toISOString() });
-    const updatedPage = await pageEntity.getState();
-    return ok(c, updatedPage);
+    return ok(c, await pageEntity.getState());
   });
   app.delete('/api/docs/pages/:id', async (c) => {
     const { id } = c.req.param();
     const deleted = await PageEntity.delete(c.env, id);
-    if (deleted) {
-      return ok(c, { id, deleted: true });
-    }
+    if (deleted) return ok(c, { id, deleted: true });
     return notFound(c, 'Page not found');
   });
   app.post('/api/docs/pages/reorder', async (c) => {
     const updates = await c.req.json<{ id: string; parentId: string | null; order: number }[]>();
-    if (!Array.isArray(updates)) {
-      return bad(c, 'Invalid payload');
-    }
+    if (!Array.isArray(updates)) return bad(c, 'Invalid payload');
     const updatedPages = await Promise.all(
       updates.map(async ({ id, parentId, order }) => {
         const pageEntity = new PageEntity(c.env, id);

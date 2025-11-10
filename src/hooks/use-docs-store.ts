@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Page, PageNode, EditorJSData } from '@shared/docs-types';
+import { Page, PageNode, EditorJSData, ChangelogEntry } from '@shared/docs-types';
 import { api } from '@/lib/api-client';
 import { produce } from 'immer';
 import { toast } from 'sonner';
@@ -18,6 +18,14 @@ interface DocsState {
   addNewPage: (parentId: string | null) => Promise<void>;
   reorderPages: (updates: { id: string; parentId: string | null; order: number }[]) => Promise<void>;
   deletePage: (pageId: string) => Promise<void>;
+  // Changelog state
+  changelogEntries: ChangelogEntry[];
+  changelogLoadingState: LoadingState;
+  changelogError: string | null;
+  fetchChangelogEntries: () => Promise<void>;
+  addChangelogEntry: (entry: Omit<ChangelogEntry, 'id'>) => Promise<void>;
+  updateChangelogEntry: (entry: ChangelogEntry) => Promise<void>;
+  deleteChangelogEntry: (id: string) => Promise<void>;
 }
 const findAndGetPage = (nodes: PageNode[], id: string): PageNode | null => {
   for (const node of nodes) {
@@ -93,7 +101,6 @@ export const useDocsStore = create<DocsState>((set, get) => ({
             method: 'PUT',
             body: JSON.stringify(meta),
         });
-        // Refetch tree because slug change affects path
         await get().fetchPageTree();
         set({ isSaving: false, lastSaved: new Date() });
         toast.success('Page settings saved.');
@@ -118,7 +125,6 @@ export const useDocsStore = create<DocsState>((set, get) => ({
     }
   },
   reorderPages: async (updates: { id: string; parentId: string | null; order: number }[]) => {
-    const originalTree = get().pageTree;
     try {
       await api('/api/docs/pages/reorder', {
         method: 'POST',
@@ -128,7 +134,6 @@ export const useDocsStore = create<DocsState>((set, get) => ({
       toast.success('Page order saved.');
     } catch (error) {
       console.error("Failed to reorder pages", error);
-      set({ pageTree: originalTree });
       toast.error('Failed to save new order.');
     }
   },
@@ -146,6 +151,61 @@ export const useDocsStore = create<DocsState>((set, get) => ({
       console.error("Failed to delete page", error);
       set({ pageTree: originalTree });
       toast.error('Failed to delete page.');
+    }
+  },
+  // Changelog implementation
+  changelogEntries: [],
+  changelogLoadingState: 'idle',
+  changelogError: null,
+  fetchChangelogEntries: async () => {
+    set({ changelogLoadingState: 'loading' });
+    try {
+      const entries = await api<ChangelogEntry[]>('/api/docs/changelog');
+      set({ changelogEntries: entries, changelogLoadingState: 'success' });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to fetch changelog';
+      set({ changelogLoadingState: 'error', changelogError: msg });
+      toast.error(msg);
+    }
+  },
+  addChangelogEntry: async (entry) => {
+    try {
+      const newEntry = await api<ChangelogEntry>('/api/docs/changelog', {
+        method: 'POST',
+        body: JSON.stringify(entry),
+      });
+      set(state => ({ changelogEntries: [newEntry, ...state.changelogEntries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) }));
+      toast.success('Changelog entry created.');
+    } catch (error) {
+      toast.error('Failed to create changelog entry.');
+      throw error;
+    }
+  },
+  updateChangelogEntry: async (entry) => {
+    try {
+      const updatedEntry = await api<ChangelogEntry>(`/api/docs/changelog/${entry.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(entry),
+      });
+      set(state => ({
+        changelogEntries: state.changelogEntries.map(e => e.id === entry.id ? updatedEntry : e)
+      }));
+      toast.success('Changelog entry updated.');
+    } catch (error) {
+      toast.error('Failed to update changelog entry.');
+      throw error;
+    }
+  },
+  deleteChangelogEntry: async (id) => {
+    try {
+      await api(`/api/docs/changelog/${id}`, { method: 'DELETE' });
+      set(state => ({
+        changelogEntries: state.changelogEntries.filter(e => e.id !== id)
+      }));
+      toast.success('Changelog entry deleted.');
+    } catch (error) {
+      toast.error('Failed to delete changelog entry.');
+      throw error;
     }
   },
 }));

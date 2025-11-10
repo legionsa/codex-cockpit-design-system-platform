@@ -10,10 +10,12 @@ import { PageEditor } from '@/components/admin/PageEditor';
 import { PageMetadataEditor } from '@/components/admin/PageMetadataEditor';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDocsStore, useCurrentPage } from '@/hooks/use-docs-store';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Book, History } from 'lucide-react';
 import { EditorJSData, Page } from '@shared/docs-types';
 import { ChangePasswordDialog } from '@/components/admin/ChangePasswordDialog';
 import { EditorPlaceholder } from '@/components/admin/EditorPlaceholder';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { ChangelogManager } from './ChangelogManager';
 export function AdminDashboardPage() {
   const fetchPageTree = useDocsStore(state => state.fetchPageTree);
   const loadingState = useDocsStore(state => state.loadingState);
@@ -25,6 +27,7 @@ export function AdminDashboardPage() {
   const currentPage = useCurrentPage();
   const editorRef = useRef<{ save: () => Promise<EditorJSData | undefined> }>(null);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [mode, setMode] = useState<'pages' | 'changelog'>('pages');
   useEffect(() => {
     fetchPageTree();
   }, [fetchPageTree]);
@@ -46,37 +49,73 @@ export function AdminDashboardPage() {
   return (
     <div className="h-screen w-screen flex flex-col bg-muted/40">
       <AdminHeader
-        currentPageTitle={currentPage?.title || 'Dashboard'}
+        currentPageTitle={mode === 'pages' ? (currentPage?.title || 'Dashboard') : 'Changelog'}
         onSave={handleSave}
         isSaving={isSaving}
         lastSaved={lastSaved}
         onOpenChangePassword={() => setIsPasswordDialogOpen(true)}
       />
       <ChangePasswordDialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen} />
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
-        <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
+      {mode === 'pages' ? (
+        <ResizablePanelGroup direction="horizontal" className="flex-1">
+          <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
             <div className="h-full flex flex-col">
-                <ScrollArea className="flex-1">
-                    <PageTree selectedPageId={selectedPageId} onSelectPage={selectPage} />
-                </ScrollArea>
-                <PageMetadataEditor />
+              <div className="p-2 border-b">
+                <ToggleGroup type="single" value={mode} onValueChange={(value: 'pages' | 'changelog') => value && setMode(value)} className="w-full">
+                  <ToggleGroupItem value="pages" aria-label="Manage Pages" className="w-1/2">
+                    <Book className="h-4 w-4 mr-2" /> Pages
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="changelog" aria-label="Manage Changelog" className="w-1/2">
+                    <History className="h-4 w-4 mr-2" /> Changelog
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+              <ScrollArea className="flex-1">
+                <PageTree selectedPageId={selectedPageId} onSelectPage={selectPage} />
+              </ScrollArea>
+              <PageMetadataEditor />
             </div>
-        </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={80}>
-          <ScrollArea className="h-full">
-            {currentPage ? (
-              <PageEditor
-                key={selectedPageId} // Re-mount editor when page changes
-                page={currentPage}
-                ref={editorRef}
-              />
-            ) : (
-              <EditorPlaceholder />
-            )}
-          </ScrollArea>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={80}>
+            <ScrollArea className="h-full">
+              {currentPage ? (
+                <PageEditor
+                  key={selectedPageId} // Re-mount editor when page changes
+                  page={currentPage}
+                  ref={editorRef}
+                />
+              ) : (
+                <EditorPlaceholder />
+              )}
+            </ScrollArea>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      ) : (
+        <div className="flex-1 flex">
+          <aside className="w-[20%] min-w-[250px] max-w-[400px] bg-background border-r">
+            <div className="h-full flex flex-col">
+              <div className="p-2 border-b">
+                <ToggleGroup type="single" value={mode} onValueChange={(value: 'pages' | 'changelog') => value && setMode(value)} className="w-full">
+                  <ToggleGroupItem value="pages" aria-label="Manage Pages" className="w-1/2">
+                    <Book className="h-4 w-4 mr-2" /> Pages
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="changelog" aria-label="Manage Changelog" className="w-1/2">
+                    <History className="h-4 w-4 mr-2" /> Changelog
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+              <div className="p-4">
+                <h2 className="text-lg font-semibold">Changelog</h2>
+                <p className="text-sm text-muted-foreground">Manage version history.</p>
+              </div>
+            </div>
+          </aside>
+          <main className="flex-1">
+            <ChangelogManager />
+          </main>
+        </div>
+      )}
     </div>
   );
 }
